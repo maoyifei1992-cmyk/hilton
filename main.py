@@ -1,6 +1,7 @@
 import smtplib
 import time
 import random
+import requests
 
 EMAIL = "yifei589@gmail.com"
 PASSWORD = "your_app_password"
@@ -19,21 +20,41 @@ def get_price(hotel):
     # ⚠️ TEMP: replace with real scraping/API later
     return random.randint(80, 500)
 
+
+SENDGRID_API_KEY = "your_sendgrid_api_key"
+
 def send_email(hotel, price):
-    subject = f"🔥 Hilton Bug Price: {hotel['name']}"
-    body = f"""
+    url = "https://api.sendgrid.com/v3/mail/send"
+
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "personalizations": [
+            {
+                "to": [{"email": "your@gmail.com"}],
+                "subject": f"🔥 Hilton Bug Price: {hotel['name']}"
+            }
+        ],
+        "from": {"email": "your@gmail.com"},
+        "content": [
+            {
+                "type": "text/plain",
+                "value": f"""
 Hotel: {hotel['name']}
 Normal: ${hotel['avg_price']}
 Now: ${price}
 
 <50% DEAL DETECTED — BOOK NOW
 """
+            }
+        ]
+    }
 
-    message = f"Subject: {subject}\n\n{body}"
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(EMAIL, PASSWORD)
-        server.sendmail(EMAIL, TO_EMAIL, message)
+    response = requests.post(url, headers=headers, json=data)
+    print(response.status_code, response.text)
 
 def check_prices():
     for hotel in HOTELS:
