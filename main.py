@@ -1,104 +1,91 @@
 import requests
 import json
 import random
-import time
-from datetime import datetime
 from flask import Flask, Response
-import html  # for XML escaping
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Hilton brand codes
+API_URL = "https://www.hilton.com/en/locations/api/locations"
 BRANDS = [
     "HI", "DT", "WA", "XR", "CN", "CQ", "TC", "CP",
     "EM", "HM", "H2", "HG", "HP", "SI", "MO", "TE", "TR", "HO"
 ]
+JSON_FILE = "hotels.json"
 
-API_URL = "https://www.hilton.com/en/locations/api/locations"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-
-# Load or fetch hotels
-def load_hotels():
+def fetch_hotels():
+    """Fetch Hilton hotels and update hotels.json with new entries."""
     try:
-        with open("hotels.json", "r", encoding="utf-8") as f:
+        with open(JSON_FILE, "r", encoding="utf-8") as f:
             hotels = json.load(f)
-            print(f"Loaded {len(hotels)} hotels from file.")
-            return hotels
     except FileNotFoundError:
-        print("hotels.json not found. Fetching from API...")
         hotels = []
-        for brand in BRANDS:
-            print(f"Fetching brand: {brand}")
-            params = {"brandCode": brand, "pageSize": 2000}
-            try:
-                r = requests.get(API_URL, params=params, headers=HEADERS, timeout=15)
-                data = r.json()
-                for item in data.get("locations", []):
-                    name = item.get("name")
-                    city = item.get("address", {}).get("city")
-                    country = item.get("address", {}).get("country")
-                    if name and city and country:
-                        hotels.append({
-                            "name": name,
-                            "city": city,
-                            "country": country,
-                            "brand": brand
-                        })
-            except Exception as e:
-                print(f"Error fetching {brand}: {e}")
-        # Save for next time
-        with open("hotels.json", "w", encoding="utf-8") as f:
-            json.dump(hotels, f, indent=2, ensure_ascii=False)
-        print(f"Generated {len(hotels)} Hilton hotels worldwide.")
-        return hotels
 
-hotels = load_hotels()
+    existing_names = {h["name"] for h in hotels}
 
-# Simulate bug prices (<50% discount)
-def simulate_bug_prices():
-    updated = []
-    for h in hotels:
-        # Randomly select some hotels for bug prices
-        if random.random() < 0.05:  # 5% of hotels
-            current_price = round(random.uniform(80, 300), 2)
-            discount = random.uniform(0.5, 0.9)  # 50%-90% off
-            h_copy = h.copy()
-            h_copy["current_price"] = current_price
-            h_copy["discount"] = discount
-            h_copy["url"] = f"https://www.hilton.com/en/hotels/"  # placeholder
-            updated.append(h_copy)
-    return updated
+    for brand in BRANDS:
+        try:
+            r = requests.get(API_URL, params={"brandCode": brand, "pageSize": 2000}, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            data = r.json()
+            for item in data.get("locations", []):
+                name = item.get("name")
+                city = item.get("address", {}).get("city")
+                country = item.get("address", {}).get("country")
+                if name and city and country and name not in existing_names:
+                    hotels.append({
+                        "name": name,
+                        "city": city,
+                        "country": country,
+                        "brand": brand
+                    })
+                    existing_names.add(name)
+        except Exception as e:
+            print(f"Error fetching {brand}: {e}")
 
-# Generate RSS XML
-def generate_rss():
-    bug_hotels = simulate_bug_prices()
+    with open(JSON_FILE, "w", encoding="utf-8") as f:
+        json.dump(hotels, f, indent=2, ensure_ascii=False)
+
+    print(f"Loaded {len(hotels)} hotels in total.")
+    return hotels
+
+def generate_rss(hotels):
+    """Generate RSS feed with simulated bug prices (<50%)."""
     now = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
-    rss = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<rss version="2.0">',
-        '<channel>',
-        '<title>Hilton Bug Price Alerts</title>',
-        '<description>Real-time bug price alerts (&lt;50%)</description>',
-        '<link>https://your-app.up.railway.app/rss</link>'
-    ]
-    for h in bug_hotels:
-        rss.append("<item>")
-        rss.append(f"<title>{html.escape(h['name'])} ({html.escape(h['city'])}, {html.escape(h['country'])})</title>")
-        rss.append(f"<link>{h['url']}</link>")
-        rss.append(
-            f"<description>Hilton {html.escape(h['brand'])} hotel in {html.escape(h['city'])}, "
-            f"{html.escape(h['country'])}. Price: ${h['current_price']} ({int(h['discount']*100)}% off)</description>"
-        )
-        rss.append(f"<pubDate>{now}</pubDate>")
-        rss.append("</item>")
-    rss.append("</channel>")
-    rss.append("</rss>")
-    return "\n".join(rss)
+    items = []
+
+    for hotel in hotels:
+        # simulate random bug price between 20%-49%
+        bug_price = random.randint(20, 49)
+        title = f"{hotel['name']} ({hotel['city']}, {hotel['country']}) - Bug price {bug_price}% OFF!"
+        description = f"Hilton {hotel['brand']} hotel in {hotel['city']}, {hotel['country']}. Discount: {bug_price}%"
+        link = "https://www.hilton.com/en/hotels/"
+        item = f"""
+        <item>
+            <title>{title}</title>
+            <link>{link}</link>
+            <description>{description}</description>
+            <pubDate>{now}</pubDate>
+        </item>
+        """
+        items.append(item.strip())
+
+    rss_feed = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hilton Bug Price Alerts</title>
+    <description>Real-time bug price alerts (&lt;50%)</description>
+    <link>https://your-app.up.railway.app/rss</link>
+    {"".join(items)}
+  </channel>
+</rss>
+"""
+    return rss_feed
 
 @app.route("/rss")
-def rss_feed():
-    xml = generate_rss()
-    return Response(xml, mimetype="application/rss+xml")
+def rss():
+    hotels = fetch_hotels()
+    feed = generate_rss(hotels[:50])  # limit to 50 items to avoid huge feed
+    return Response(feed, mimetype="application/rss+xml")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
