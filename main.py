@@ -9,15 +9,24 @@ BRANDS = ["HI","DT","WA","XR","CN","CQ","TC","CP","EM","HM","H2","HG","HP","SI",
 
 def fetch_hotels():
     hotels = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
     for brand in BRANDS:
         try:
-            # Hilton API for locations
             r = requests.get(
                 "https://www.hilton.com/en/locations/api/locations",
                 params={"brandCode": brand, "pageSize": 2000},
+                headers=headers,
                 timeout=10
             )
-            data = r.json()
+            # Safely parse JSON
+            try:
+                data = r.json()
+            except json.JSONDecodeError:
+                print(f"No JSON returned for {brand}, status {r.status_code}")
+                continue
+
             for item in data.get("locations", []):
                 name = item.get("name")
                 city = item.get("address", {}).get("city")
