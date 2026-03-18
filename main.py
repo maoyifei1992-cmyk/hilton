@@ -1,60 +1,48 @@
+from flask import Flask, jsonify, Response
 import requests
 import json
 
-# Hilton brand codes
-BRANDS = [
-    "HI", "DT", "WA", "XR", "CN", "CQ", "TC", "CP",
-    "EM", "HM", "H2", "HG", "HP", "SI", "MO", "TE", "TR", "HO"
-]
+app = Flask(__name__)
 
-API_URL = "https://www.hilton.com/en/locations/api/locations"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-JSON_FILE = "hotels.json"
+# Hilton brand codes (you can expand if needed)
+BRANDS = ["HI","DT","WA","XR","CN","CQ","TC","CP","EM","HM","H2","HG","HP","SI","MO","TE","TR","HO"]
 
-def load_existing_hotels():
-    """Load hotels.json if exists, otherwise return empty list."""
-    try:
-        with open(JSON_FILE, "r", encoding="utf-8") as f:
-            hotels = json.load(f)
-            print(f"Loaded {len(hotels)} hotels from file.")
-            return hotels
-    except FileNotFoundError:
-        return []
-
-def save_hotels(hotels):
-    """Save hotels list to hotels.json"""
-    with open(JSON_FILE, "w", encoding="utf-8") as f:
-        json.dump(hotels, f, indent=2, ensure_ascii=False)
-    print(f"Saved {len(hotels)} hotels to file.")
-
-def fetch_all_hotels():
-    """Fetch all Hilton hotels from API and update hotels.json"""
-    hotels = load_existing_hotels()
-    existing_names = {h["name"] for h in hotels}
-
+def fetch_hotels():
+    hotels = []
     for brand in BRANDS:
-        print(f"Fetching brand: {brand}")
-        params = {"brandCode": brand, "pageSize": 2000}  # large page to get all
         try:
-            r = requests.get(API_URL, params=params, headers=HEADERS, timeout=15)
+            # Hilton API for locations
+            r = requests.get(
+                "https://www.hilton.com/en/locations/api/locations",
+                params={"brandCode": brand, "pageSize": 2000},
+                timeout=10
+            )
             data = r.json()
             for item in data.get("locations", []):
                 name = item.get("name")
                 city = item.get("address", {}).get("city")
                 country = item.get("address", {}).get("country")
-                if name and city and country and name not in existing_names:
+                if name and city and country:
                     hotels.append({
                         "name": name,
                         "city": city,
                         "country": country,
                         "brand": brand
                     })
-                    existing_names.add(name)
         except Exception as e:
             print(f"Error fetching {brand}: {e}")
+    return hotels
 
-    save_hotels(hotels)
-    print("Done fetching all hotels.")
+@app.route("/hotels.json")
+def hotels_json():
+    hotels = fetch_hotels()
+    return jsonify(hotels)
+
+@app.route("/hotels.txt")
+def hotels_txt():
+    hotels = fetch_hotels()
+    content = "\n".join([f"{h['name']} - {h['city']}, {h['country']} ({h['brand']})" for h in hotels])
+    return Response(content, mimetype="text/plain")
 
 if __name__ == "__main__":
-    fetch_all_hotels()
+    app.run(host="0.0.0.0", port=8080)
