@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Hilton Garden Inn New York/Manhattan-Midtown East",
+    "brand": "Hilton Garden Inn",
+    "city": "New York",
+    "country": "USA",
+    "url": "https://www.hilton.com/en/hotels/nycmegx-hilton-garden-inn-new-york-midtown-east/"
+  },
+  {
+    "name": "Conrad London St. James",
+    "brand": "Conrad",
+    "city": "London",
+    "country": "UK",
+    "url": "https://www.hilton.com/en/hotels/loncici-conrad-london-st-james/"
+  },
+  {
+    "name": "Curio Collection by Hilton Rome",
+    "brand": "Curio Collection by Hilton",
+    "city": "Rome",
+    "country": "Italy",
+    "url": "https://www.hilton.com/en/hotels/romcuci-curio-collection-by-hilton-rome/"
+  },
+  {
+    "name": "Canopy by Hilton Tokyo Shinjuku",
+    "brand": "Canopy by Hilton",
+    "city": "Tokyo",
+    "country": "Japan",
+    "url": "https://www.hilton.com/en/hotels/tyocpky-canopy-by-hilton-tokyo-shinjuku/"
+  },
+  {
+    "name": "Tapestry Collection by Hilton The Woodlands Resort",
+    "brand": "Tapestry Collection by Hilton",
+    "city": "The Woodlands",
+    "country": "USA",
+    "url": "https://www.hilton.com/en/hotels/iahwctw-tapestry-collection-by-hilton-the-woodlands-resort/"
+  },
+  {
+    "name": "Hilton Dubai Jumeirah",
+    "brand": "Hilton Hotels & Resorts",
+    "city": "Dubai",
+    "country": "UAE",
+    "url": "https://www.hilton.com/en/hotels/dxbhihi-hilton-dubai-jumeirah/"
+  },
+  {
+    "name": "DoubleTree by Hilton Hotel Sydney",
+    "brand": "DoubleTree by Hilton",
+    "city": "Sydney",
+    "country": "Australia",
+    "url": "https://www.hilton.com/en/hotels/sydtdtd-doubletree-by-hilton-hotel-sydney/"
+  },
+  {
+    "name": "Embassy Suites by Hilton Orlando",
+    "brand": "Embassy Suites by Hilton",
+    "city": "Orlando",
+    "country": "USA",
+    "url": "https://www.hilton.com/en/hotels/mcoorww-embassy-suites-orlando/"
+  },
+  {
+    "name": "Homewood Suites by Hilton Boston-Cambridge",
+    "brand": "Homewood Suites by Hilton",
+    "city": "Cambridge",
+    "country": "USA",
+    "url": "https://www.hilton.com/en/hotels/boschhw-homewood-suites-boston-cambridge/"
+  },
+  {
+    "name": "Home2 Suites by Hilton Miami Downtown/Brickell",
+    "brand": "Home2 Suites by Hilton",
+    "city": "Miami",
+    "country": "USA",
+    "url": "https://www.hilton.com/en/hotels/miahttw-home2-suites-miami-downtown-brickell/"
+  }
+]
