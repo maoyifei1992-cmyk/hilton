@@ -53,8 +53,7 @@ def generate_rss():
                 <link>https://www.hilton.com/en/locations/</link>
             </item>
             """
-        # Delay to avoid blocking
-        time.sleep(0.1)
+
 
     rss_feed = f"""<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
