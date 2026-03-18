@@ -1,78 +1,76 @@
+from flask import Flask, Response
+import json
+import requests
+from bs4 import BeautifulSoup
 import time
 import random
-from flask import Flask, Response
-from datetime import datetime
 
 app = Flask(__name__)
 
-# In-memory RSS items
-rss_items = []
+# Load Hilton hotels JSON
+with open("hotels.json", "r", encoding="utf-8") as f:
+    HOTELS = json.load(f)
 
-HOTELS = [
-    {"name": "Conrad Tokyo", "avg_price": 400},
-    {"name": "Waldorf Astoria Shanghai", "avg_price": 350},
-    {"name": "Hilton London Metropole", "avg_price": 250},
-]
+# Example: simulate average price for bug price calculation
+def average_price(hotel):
+    # You could fetch this from historical data
+    return 200  # placeholder
 
-def get_price(hotel):
-    # ⚠️ Replace later with real Hilton data
-    return random.randint(80, 500)
+# OTA scraping function (Booking.com example)
+HEADERS = {"User-Agent": "Mozilla/5.0"}
 
-def add_rss_item(hotel, price):
-    now = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+def fetch_price(hotel):
+    try:
+        query = f"{hotel['name']} {hotel['city']}"
+        url = f"https://www.booking.com/searchresults.html?ss={query}"
 
-    item = f"""
-    <item>
-      <title>🔥 Hilton Bug Price: {hotel['name']}</title>
-      <description>
-        Normal: ${hotel['avg_price']} | Now: ${price}
-        (&lt;50% DEAL DETECTED)
-      </description>
-      <pubDate>{now}</pubDate>
-      <guid>{hotel['name']}-{price}-{now}</guid>
-    </item>
-    """
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    rss_items.insert(0, item)
+        # Extract first price found
+        price_tags = soup.select('[data-testid="price-and-discounted-price"]')
+        for tag in price_tags:
+            text = tag.get_text()
+            digits = ''.join(filter(str.isdigit, text))
+            if digits:
+                price = int(digits)
+                return price
+        return None
+    except Exception as e:
+        print("OTA fetch error:", e)
+        return None
 
-    # Keep last 50 alerts only
-    if len(rss_items) > 50:
-        rss_items.pop()
-
+# Generate RSS feed XML
 def generate_rss():
+    rss_items = ""
+    for hotel in HOTELS:
+        price = fetch_price(hotel)
+        if price and price < 0.5 * average_price(hotel):  # bug price <50%
+            rss_items += f"""
+            <item>
+                <title>{hotel['name']} - ${price}</title>
+                <description>Bug price alert: {hotel['name']} in {hotel['city']}, {hotel['country']}</description>
+                <link>https://www.hilton.com/en/locations/</link>
+            </item>
+            """
+        # Delay to avoid blocking
+        time.sleep(random.randint(2, 5))
+
     rss_feed = f"""<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
       <channel>
         <title>Hilton Bug Price Alerts</title>
-        <description>Real-time bug price alerts (&lt;50%)</description>
+        <description>Real-time bug price alerts (<50%)</description>
         <link>https://your-app.up.railway.app/rss</link>
-        {''.join(rss_items)}
+        {rss_items}
       </channel>
-    </rss>
-    """
+    </rss>"""
     return rss_feed
 
 @app.route("/rss")
 def rss():
-    return Response(generate_rss(), mimetype="application/rss+xml")
-
-def check_prices():
-    for hotel in HOTELS:
-        price = get_price(hotel)
-
-        if price < hotel["avg_price"] * 0.5:
-            add_rss_item(hotel, price)
-            print(f"ALERT: {hotel['name']} ${price}")
-
-# Background loop
-def run_checker():
-    while True:
-        check_prices()
-        time.sleep(60)
-
-# Start background thread
-import threading
-threading.Thread(target=run_checker, daemon=True).start()
+    feed = generate_rss()
+    return Response(feed, mimetype="application/rss+xml")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8080)
