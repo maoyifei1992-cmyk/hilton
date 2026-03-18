@@ -54,7 +54,7 @@ def generate_rss():
             </item>
             """
         # Delay to avoid blocking
-        time.sleep(random.randint(2, 5))
+        time.sleep(0.1)
 
     rss_feed = f"""<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
